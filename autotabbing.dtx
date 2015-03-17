@@ -1,0 +1,445 @@
+% \iffalse meta-comment
+%
+% Copyright (C) 2015 by Pascal Germroth <pascal@germroth.name>
+% ------------------------------------------------------------
+%
+% This file may be distributed and/or modified under the
+% conditions of the LaTeX Project Public License, either version 1.2
+% of this license or (at your option) any later version.
+% The latest version of this license is in:
+%
+%    http://www.latex-project.org/lppl.txt
+%
+% and version 1.2 or later is part of all distributions of LaTeX 
+% version 1999/12/01 or later.
+%
+% \fi
+%
+% \iffalse
+%<*driver>
+\ProvidesFile{autotabbing.dtx}
+%</driver>
+%<package>\NeedsTeXFormat{LaTeX2e}[1999/12/01]
+%<package>\ProvidesPackage{autotabbing}
+%<*package>
+    [2015/03/16 v1.0 automatic tabbing-like environment]
+%</package>
+%
+%<*driver>
+\documentclass{ltxdoc}
+\usepackage{autotabbing}
+\usepackage{color}
+\usepackage{showexpl}
+%\usepackage{lua-visual-debug}
+\EnableCrossrefs
+\CodelineIndex
+\RecordChanges
+
+\begin{document}
+\changes{v1.0}{2015/03/16}{Initial version}
+
+\GetFileInfo{autotabbing.dtx}
+
+\DoNotIndex{\newcommand,\newenvironment}
+
+\title{The \textsf{autotabbing} package\thanks{This document
+  corresponds to \textsf{autotabbing}~\fileversion, dated \filedate.}}
+\author{Pascal Germroth \\ \texttt{pascal@germroth.name}}
+
+\maketitle
+
+\section{Introduction}
+
+This package attempts to combine the way tabstops can be defined inline from
+|tabbing| with the way column sizes are determined automatically from |tabular|.
+You don't define columns beforehand but simply insert named tabstops which will
+be aligned with each other, as determined by the content.
+
+\begin{LTXexample}
+\begin{autotabbing}
+  first &[1] second &[2] third \\
+  \hfil this is centered \hfil &[2] third \\
+  something longer &[1] \hfil yyyy \hfil \\
+  this takes \dotfill the whole row \\
+  &[1] multiple columns
+\end{autotabbing}
+\end{LTXexample}
+There are no high-level functions at the moment, i.e. aligning content is done
+using |\hfil|, there are no borders or backgrounds or cell templates.
+
+I wrote it to pretty print aligned Haskell code in a proportional font, see the
+\textsf{autoverbalign} package for an attempt to guess these tabstops from
+monospace-aligned text.
+\begin{autotabbing}
+  map :: &[1](a $\rightarrow$ b) $\rightarrow$ &[2] [Maybe a] &[3] $\rightarrow$ [a]\\
+  map &[1] fun &[2] (x:xs) &[3]= case x of &[4] Just y  & $\rightarrow$ fun y : map xs\\
+                                           &[4] Nothing & $\rightarrow$ map xs\\
+  map &[1] \_ &[2] [] &[3] = []
+\end{autotabbing}
+The environment support breaking across pages:
+\begin{autotabbing}
+  here & are & some\\
+  lines & of sometimes longer & text\\
+  to & make & space\\
+  and & show & how\\
+  it & breaks & across\\
+  pages, but still & stays & aligned
+\end{autotabbing}
+Of course for simple layouts \textsf{longtable} would be more flexible here,
+but this package doesn't try to provide full-featured tables but instead a
+very simple automatic alignment function.
+
+\section{Usage}
+
+\DescribeEnv{autotabbing}
+The main environment.
+|\begin{autotabbing}|\oarg{kvargs} accepts an optional key-value argument.
+There is only one defined at the moment:
+\begin{description}
+  \item[debug] shows markers with the tabstop's numbers at their positions.
+\end{description}
+
+\DescribeMacro{&\oarg{tab}}
+Sets a tabstop. If no argument is given, will increase from the previous.
+Stop numbers must be given in ascending order for each row, but arbitrary
+gaps are fine.
+
+\begin{LTXexample}
+\begin{autotabbing}[debug]
+  foo & bar & baz &[20] qux & zzy
+\end{autotabbing}
+\end{LTXexample}
+
+Ignores the following spaces, to get a space after a tabstop, enclose it.
+\begin{LTXexample}
+\begin{autotabbing}[debug]
+  before & none& { after}
+\end{autotabbing}
+\end{LTXexample}
+
+
+\DescribeMacro{\\}
+Starts a new row. Don't end the last one with |\\|, it will cause an empty
+row. There is \emph{no} optional argument to add vertical space.
+
+
+\DescribeMacro{\intertext}
+Like in \textsf{amsmath}, this allows interrupting a display, aligning across
+the break. It may contain paragraph breaks, but no page breaks.
+There's no proper handling of spacing at the moment.
+\begin{LTXexample}
+  \begin{autotabbing}[debug]
+  some cells: & here & being \\
+  \intertext{
+  interrupted with
+
+  multiple paragraphs of text
+  }
+  and & continuing & aligned
+\end{autotabbing}
+\end{LTXexample}
+
+
+\DescribeMacro{\abovedisplayskip}
+\DescribeMacro{\baselineskip}
+\DescribeMacro{\belowdisplayskip}
+The environment uses the standard lengths above, between and below rows.
+
+
+\DocInput{autotabbing.dtx}
+\PrintChanges
+\PrintIndex
+\end{document}
+%</driver>
+% \fi
+%
+% \CheckSum{0}
+%
+% \CharacterTable
+%  {Upper-case    \A\B\C\D\E\F\G\H\I\J\K\L\M\N\O\P\Q\R\S\T\U\V\W\X\Y\Z
+%   Lower-case    \a\b\c\d\e\f\g\h\i\j\k\l\m\n\o\p\q\r\s\t\u\v\w\x\y\z
+%   Digits        \0\1\2\3\4\5\6\7\8\9
+%   Exclamation   \!     Double quote  \"     Hash (number) \#
+%   Dollar        \$     Percent       \%     Ampersand     \&
+%   Acute accent  \'     Left paren    \(     Right paren   \)
+%   Asterisk      \*     Plus          \+     Comma         \,
+%   Minus         \-     Point         \.     Solidus       \/
+%   Colon         \:     Semicolon     \;     Less than     \<
+%   Equals        \=     Greater than  \>     Question mark \?
+%   Commercial at \@     Left bracket  \[     Backslash     \\
+%   Right bracket \]     Circumflex    \^     Underscore    \_
+%   Grave accent  \`     Left brace    \{     Vertical bar  \|
+%   Right brace   \}     Tilde         \~}
+%
+%
+% \StopEventually{}
+% \section{Implementation}
+%
+%    \begin{macrocode}
+%<*package>
+\RequirePackage{xkeyval}
+\RequirePackage{luatexbase}
+\RequireLuaModule{lualibs}
+\directlua{dofile "autotabbing.lua"}
+%    \end{macrocode}
+%
+% We use a counter to keep track of the current tabstop,
+% the first has index 0, the last 1000.
+%    \begin{macrocode}
+\newcount\autotabbing@current
+%    \end{macrocode}
+%
+% \begin{macro}{\autotabbing@cell@start}
+% Debug visualisation: show the tabstops and numbers.
+%    \begin{macrocode}
+\define@boolkey{autotabbing}{debug}[true]{}
+\newcommand{\autotabbing@cell@start}{%
+  \ifKV@autotabbing@debug%
+    \ifnum\the\autotabbing@current > 0
+      \raisebox{0pt}[0pt][0pt]{% zero height box
+        \color{red}%
+        \makebox[0pt][c]{% zero width rule
+          \rule[-.1\baselineskip]{.5pt}{0.5\baselineskip}}%
+        \makebox[0pt][c]{% zero width label
+          \raisebox{0.5\baselineskip}% raised
+            {\tiny\sffamily\the\autotabbing@current}}%
+      }%
+    \fi%
+  \fi%
+}
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{environment}{autotabbing@cell}
+% We put the cell's contents into a box and hand it to the Lua code.
+% We ignore the spaces at the beginning to avoid inconsistency with the optional
+% argument of |&| and ease, but allow them at the end where it's easy to choose.
+% The box ends with a glue so the content won't stretch when the width is ajusted,
+% manual alignment using |\hfil| still works.
+%
+% (Might be better to do this using attributes? Assemble the table into a big list
+% of attributed cells, with optional content in between which gets ignored;
+% avoids having to build a new node list?)
+%    \begin{macrocode}
+\newenvironment{autotabbing@cell}{
+  \edef\autotabbing@prev{\the\autotabbing@current}
+  \setbox0=\hbox\bgroup%
+    \autotabbing@cell@start%
+    \ignorespaces%
+}{%
+    \hss%
+  \egroup
+  \directlua{autotabbing.new_cell(\autotabbing@prev, \the\autotabbing@current)}
+}
+%    \end{macrocode}
+% \end{environment}
+%
+% \begin{macro}{\autotabbing@cell@next}
+% Skip to the next cell. Ensure increasing tabs, without an argument we just
+% advance the counter. We do this while in the current cell, so that it knows
+% at which tab it ends.
+%    \begin{macrocode}
+\newcommand{\autotabbing@cell@next}[1][0]{%
+  \ifnum #1 > \the\autotabbing@current%
+    \global\autotabbing@current #1\relax%
+  \else%
+    \global\advance\autotabbing@current 1\relax%
+  \fi%
+  \end{autotabbing@cell}%
+  \begin{autotabbing@cell}%
+}
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{environment}{\autotabbing@row}
+% A row starts at tab 0 and ends at tab 1000.
+%    \begin{macrocode}
+\newenvironment{autotabbing@row}{
+  \directlua{autotabbing.new_row()}
+  \global\autotabbing@current 0\relax
+  \begin{autotabbing@cell}%
+}{%
+  \global\autotabbing@current 1000\relax%
+  \end{autotabbing@cell}
+}
+%    \end{macrocode}
+% \end{environment}
+%
+% \begin{macro}{\autotabbing@row@next}
+% Closes the current row and immediately opens a new one.
+% We can't control row spacing here because this is between boxes, landing
+% before the rows.
+%    \begin{macrocode}
+\newcommand{\autotabbing@row@next}{%
+  \end{autotabbing@row}
+  \begin{autotabbing@row}
+}%
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\autotabbing@intertext}
+% Interrupt the display. Must follow a |\\|, but doesn't check.
+%    \begin{macrocode}
+\newcommand{\autotabbing@intertext}[1]{
+  \hbox to \hsize{\vbox{#1}}
+  \autotabbing@row@next
+}
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{environment}{autotabbing}
+% Define tabular-like syntax, start collecting the cells,
+% and use Lua to insert the final product.
+% We unskip the final space here for comfort, but not from any other cells.
+%    \begin{macrocode}
+\catcode`&=\active
+\newenvironment{autotabbing}[1][]{
+  \setkeys{autotabbing}{#1}
+  \let\\=\autotabbing@row@next
+  \let&=\autotabbing@cell@next
+  \catcode`\&=\active
+  \let\intertext=\autotabbing@intertext
+  \begin{autotabbing@row}
+}{%
+  \unskip%
+  \end{autotabbing@row}
+  \par%
+  \vspace{\abovedisplayskip}%
+  \directlua{autotabbing.finish()}%
+  \vspace{\belowdisplayskip}%
+  \par%
+}
+\catcode`& 4
+%</package>
+%    \end{macrocode}
+% \end{environment}
+%
+%
+% In the Lua code, we collect the saved cell boxes into into a list of rows,
+% measure them and then create a linked node list which we return to the document.
+%    \begin{macrocode}
+%<*lua>
+autotabbing = {}
+local rows = {}
+%    \end{macrocode}
+% Start a new row.
+%    \begin{macrocode}
+function autotabbing.new_row()
+  table.insert(rows, {})
+end
+%    \end{macrocode}
+% Retrieve a new cell from |\box0|. Also store the left and right tabs.
+%    \begin{macrocode}
+function autotabbing.new_cell(from, to)
+  local box = node.copy(tex.box[0])
+  table.insert(rows[#rows], {from=from, to=to, box=box})
+end
+%    \end{macrocode}
+% Get the horizontal offsets of the tab stops.
+% We measure the cells column-wise (keeping track using the |index| table,
+% since we might not visit a cell in each row every step) by selecting those
+% starting at the current stop (which had its offset calculated in a previous
+% step), and moving the cell's end-stops.
+% A cell may end at any stop with a larger index than its start.
+% There may be gaps in the tab numbers, and their offsets don't have to be in
+% the same order.
+%    \begin{macrocode}
+local function get_offsets(rows)
+  local offsets = {[0] = 0}
+  local index = {}
+  for i = 1, #rows do index[i] = 1 end
+  local current = 0
+  repeat
+    for i = 1, #rows do
+      local cell = rows[i][index[i]]
+      if cell and cell.from == current then
+        local width = cell.box.width --node.dimensions(cell.box)
+        local left = offsets[cell.from]
+        local right = left + width
+        if right > (offsets[cell.to] or 0) then
+          offsets[cell.to] = right
+        end
+        index[i] = index[i] + 1
+      end
+    end
+    current = 1000
+    for i = 1, #rows do
+      local cell = rows[i][index[i]]
+      if cell and cell.from < current then
+        current = cell.from
+      end
+    end
+  until current == 1000
+  return offsets
+end
+%    \end{macrocode}
+% Alter each cell's widths so they fit between their respective stops.
+%    \begin{macrocode}
+local function adjust_widths(rows)
+  local offsets = get_offsets(rows)
+  for i = 1, #rows do
+    local row = rows[i]
+    for j = 1, #row do
+      local cell = row[j]
+      local width = offsets[cell.to] - offsets[cell.from]
+      cell.box = node.hpack(cell.box.head, width, 'exactly')
+    end
+  end
+end
+%    \end{macrocode}
+% Convert a lua table of boxes into a linked list.
+%    \begin{macrocode}
+local function make_list(boxes)
+  for i = 2, #boxes do
+    boxes[i - 1].next = boxes[i]
+    boxes[i].prev = boxes[i - 1]
+  end
+  return boxes[1]
+end
+%    \end{macrocode}
+% Insert baselineskips between each pair of successive nodes.
+% Does not alter head or tail of the list.
+%    \begin{macrocode}
+local function insert_baselineskips(head)
+  for n in node.traverse(head) do
+    if n.prev then
+      local skip = node.new('glue', 2)
+      skip.spec = node.copy(tex.baselineskip)
+      skip.spec.width = math.max(0, skip.spec.width - n.prev.depth - n.height)
+      n.prev.next = skip
+      skip.prev = n.prev
+      skip.next = n
+      n.prev = skip
+    end
+  end
+end
+%    \end{macrocode}
+% Output a hbox for each row, glue them together to allow breaking.
+%    \begin{macrocode}
+local function make_boxes(rows)
+  local out = {}
+  for i = 1, #rows do
+    local row = rows[i]
+    local hbox = {}
+    for j = 1, #row do hbox[j] = row[j].box end
+    hbox = node.hpack(make_list(hbox))
+    table.insert(out, hbox)
+  end
+  out = make_list(out)
+  insert_baselineskips(out)
+  node.write(out)
+end
+%    \end{macrocode}
+% Process the current table and reset
+%    \begin{macrocode}
+function autotabbing.finish()
+  adjust_widths(rows)
+  make_boxes(rows)
+  rows = {}
+end
+%</lua>
+%    \end{macrocode}
+%
+%
+% \Finale
+\endinput

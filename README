@@ -1,0 +1,2 @@
+A tabbing environment where instead of defining tabstops and columns
+users can put named stops inside rows which are aligned automatically.
