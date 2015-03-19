@@ -71,7 +71,7 @@ I wrote it to pretty print aligned Haskell code in a proportional font, see the
 \textsf{autoverbalign} package for an attempt to guess these tabstops from
 monospace-aligned text.
 \begin{autotabbing}
-  map :: &[1](a $\rightarrow$ b) $\rightarrow$ &[2] [Maybe a] &[3] $\rightarrow$ [a]\\
+  map :: &[1](a $\rightarrow$ b) $\rightarrow$ &[2] [Maybe a] &[3] $\rightarrow$ [b]\\
   map &[1] fun &[2] (x:xs) &[3]= case x of &[4] Just y  & $\rightarrow$ fun y : map xs\\
                                            &[4] Nothing & $\rightarrow$ map xs\\
   map &[1] \_ &[2] [] &[3] = []
@@ -91,12 +91,16 @@ very simple automatic alignment function.
 
 \section{Usage}
 
-\DescribeEnv{autotabbing}
-The main environment.
-|\begin{autotabbing}|\oarg{kvargs} accepts an optional key-value argument.
-There is only one defined at the moment:
+Load the package using
+|\usepackage|\oarg{kvargs}|{autotabbing}|.\\
+Use the environment:
+|\begin{autotabbing}|\oarg{kvargs} ... |\end{autotabbing}|.\\
+Use the optional arguments or |\autotabbingsetup|\marg{kvargs} to set options.
+There is only one option defined at the moment:
 \begin{description}
-  \item[debug] shows markers with the tabstop's numbers at their positions.
+  \item[draft] shows markers with the tabstop's numbers at their positions.
+    This inherits the class option, i.e. it will be enabled when
+    |\documentclass[draft]{article}| is used.
 \end{description}
 
 \DescribeMacro{&\oarg{tab}}
@@ -104,15 +108,16 @@ Sets a tabstop. If no argument is given, will increase from the previous.
 Stop numbers must be given in ascending order for each row, but arbitrary
 gaps are fine.
 
+\autotabbingsetup{draft}
 \begin{LTXexample}
-\begin{autotabbing}[debug]
+\begin{autotabbing}
   foo & bar & baz &[20] qux & zzy
 \end{autotabbing}
 \end{LTXexample}
 
 Ignores the following spaces, to get a space after a tabstop, enclose it.
 \begin{LTXexample}
-\begin{autotabbing}[debug]
+\begin{autotabbing}
   before & none& { after}
 \end{autotabbing}
 \end{LTXexample}
@@ -128,7 +133,7 @@ Like in \textsf{amsmath}, this allows interrupting a display, aligning across
 the break. It may contain paragraph breaks, but no page breaks.
 There's no proper handling of spacing at the moment.
 \begin{LTXexample}
-  \begin{autotabbing}[debug]
+  \begin{autotabbing}
   some cells: & here & being \\
   \intertext{
   interrupted with
@@ -145,6 +150,9 @@ There's no proper handling of spacing at the moment.
 \DescribeMacro{\belowdisplayskip}
 The environment uses the standard lengths above, between and below rows.
 
+
+% test: this should work.
+\begin{autotabbing}\end{autotabbing}
 
 \DocInput{autotabbing.dtx}
 \PrintChanges
@@ -175,13 +183,27 @@ The environment uses the standard lengths above, between and below rows.
 % \StopEventually{}
 % \section{Implementation}
 %
+% Load the Lua portion of the package xx
 %    \begin{macrocode}
 %<*package>
-\RequirePackage{xkeyval}
 \RequirePackage{luatexbase}
-\RequireLuaModule{lualibs}
-\directlua{dofile "autotabbing.lua"}
+\RequireLuaModule{autotabbing}
 %    \end{macrocode}
+% Define the |draft| option
+%    \begin{macrocode}
+\RequirePackage{kvoptions}
+\SetupKeyvalOptions{family=autotabbing, prefix=autotabbing@}
+\DeclareBoolOption{draft}
+\DeclareComplementaryOption{final}{draft}
+\ProcessKeyvalOptions{autotabbing}
+%    \end{macrocode}
+%
+% \begin{macro}{\autotabbingsetup}
+% Macro to set the option.
+%    \begin{macrocode}
+\newcommand*{\autotabbingsetup}{\setkeys{autotabbing}}
+%    \end{macrocode}
+% \end{macro}
 %
 % We use a counter to keep track of the current tabstop,
 % the first has index 0, the last 1000.
@@ -190,11 +212,11 @@ The environment uses the standard lengths above, between and below rows.
 %    \end{macrocode}
 %
 % \begin{macro}{\autotabbing@cell@start}
-% Debug visualisation: show the tabstops and numbers.
+% Draft visualisation: show the tabstops and numbers.
 %    \begin{macrocode}
-\define@boolkey{autotabbing}{debug}[true]{}
+\RequirePackage{color}
 \newcommand{\autotabbing@cell@start}{%
-  \ifKV@autotabbing@debug%
+  \ifautotabbing@draft%
     \ifnum\the\autotabbing@current > 0
       \raisebox{0pt}[0pt][0pt]{% zero height box
         \color{red}%
@@ -221,14 +243,14 @@ The environment uses the standard lengths above, between and below rows.
 % of attributed cells, with optional content in between which gets ignored;
 % avoids having to build a new node list?)
 %    \begin{macrocode}
-\newenvironment{autotabbing@cell}{
+\newenvironment*{autotabbing@cell}{
   \edef\autotabbing@prev{\the\autotabbing@current}
   \setbox0=\hbox\bgroup%
     \autotabbing@cell@start%
     \ignorespaces%
 }{%
     \hss%
-  \egroup
+  \egroup%
   \directlua{autotabbing.new_cell(\autotabbing@prev, \the\autotabbing@current)}
 }
 %    \end{macrocode}
@@ -239,7 +261,7 @@ The environment uses the standard lengths above, between and below rows.
 % advance the counter. We do this while in the current cell, so that it knows
 % at which tab it ends.
 %    \begin{macrocode}
-\newcommand{\autotabbing@cell@next}[1][0]{%
+\newcommand*{\autotabbing@cell@next}[1][0]{%
   \ifnum #1 > \the\autotabbing@current%
     \global\autotabbing@current #1\relax%
   \else%
@@ -254,7 +276,7 @@ The environment uses the standard lengths above, between and below rows.
 % \begin{environment}{\autotabbing@row}
 % A row starts at tab 0 and ends at tab 1000.
 %    \begin{macrocode}
-\newenvironment{autotabbing@row}{
+\newenvironment*{autotabbing@row}{
   \directlua{autotabbing.new_row()}
   \global\autotabbing@current 0\relax
   \begin{autotabbing@cell}%
@@ -293,8 +315,8 @@ The environment uses the standard lengths above, between and below rows.
 % We unskip the final space here for comfort, but not from any other cells.
 %    \begin{macrocode}
 \catcode`&=\active
-\newenvironment{autotabbing}[1][]{
-  \setkeys{autotabbing}{#1}
+\newenvironment*{autotabbing}[1][]{
+  \autotabbingsetup{#1}
   \let\\=\autotabbing@row@next
   \let&=\autotabbing@cell@next
   \catcode`\&=\active
@@ -304,9 +326,9 @@ The environment uses the standard lengths above, between and below rows.
   \unskip%
   \end{autotabbing@row}
   \par%
-  \vspace{\abovedisplayskip}%
+%  \vspace{\abovedisplayskip}%
   \directlua{autotabbing.finish()}%
-  \vspace{\belowdisplayskip}%
+%  \vspace{\belowdisplayskip}%
   \par%
 }
 \catcode`& 4
@@ -315,11 +337,14 @@ The environment uses the standard lengths above, between and below rows.
 % \end{environment}
 %
 %
-% In the Lua code, we collect the saved cell boxes into into a list of rows,
-% measure them and then create a linked node list which we return to the document.
 %    \begin{macrocode}
 %<*lua>
-autotabbing = {}
+local err, warn, info, log = luatexbase.provides_module({name = 'autotabbing'})
+autotabbing = autotabbing or {}
+%    \end{macrocode}
+% We collect the saved cell boxes into into a list of rows,
+% measure them and then create a linked node list which we return to the document.
+%    \begin{macrocode}
 local rows = {}
 %    \end{macrocode}
 % Start a new row.
@@ -355,8 +380,14 @@ local function get_offsets(rows)
       if cell and cell.from == current then
         local width = cell.box.width --node.dimensions(cell.box)
         local left = offsets[cell.from]
+        if not left then
+          err(string.format("invalid tabs: from=%d to=%d",
+            cell.from, cell.to))
+          offsets[cell.from] = 0
+          left = 0
+        end
         local right = left + width
-        if right > (offsets[cell.to] or 0) then
+        if right >= (offsets[cell.to] or 0) then
           offsets[cell.to] = right
         end
         index[i] = index[i] + 1
