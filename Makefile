@@ -1,9 +1,43 @@
+NAME = autotabbing
+FORMAT = lualatex
 
-all : autotabbing.pdf
+INS = $(NAME).ins
+DTX = $(NAME).dtx
+DOC = $(NAME).pdf
+STY = $(NAME).sty
+LUA = $(NAME).lua
 
-%.pdf : %.dtx %.sty %.lua
-	lualatex $*.dtx
+TEXMFROOT = ./texmf
+RUNDIR = $(TEXMFROOT)/tex/$(FORMAT)/$(NAME)
+DOCDIR = $(TEXMFROOT)/doc/$(FORMAT)/$(NAME)
+SRCDIR = $(TEXMFROOT)/source/$(FORMAT)/$(NAME)
 
-%.sty %.lua : %.dtx %.ins
-	lualatex $*.ins
+RUNFILES = $(STY) $(LUA)
+DOCFILES = $(DOC) README
+SRCFILES = $(DTX) $(INS) Makefile
 
+ALLFILES = $(RUNFILES) $(DOCFILES) $(SRCFILES)
+
+DISTDIR = $(NAME)
+ZIP = $(NAME).zip
+
+$(DOC) : $(DTX) $(STY) $(LUA)
+	lualatex -synctex=1 $<
+
+$(STY) $(LUA) : $(INS) $(DTX)
+	tex $<
+
+.PHONY : install
+install : $(ALLFILES)
+	mkdir -p $(RUNDIR)
+	cp $(RUNFILES) $(RUNDIR)
+	mkdir -p $(DOCDIR)
+	cp $(DOCFILES) $(DOCDIR)
+	mkdir -p $(SRCDIR)
+	cp $(SRCFILES) $(SRCDIR)
+
+$(ZIP) : $(ALLFILES)
+	-rm -rf $(DISTDIR)
+	mkdir $(DISTDIR)
+	cp $(ALLFILES) $(DISTDIR)
+	zip -r -9 $@ $(DISTDIR)
