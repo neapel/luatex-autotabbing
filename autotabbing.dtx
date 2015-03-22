@@ -414,10 +414,18 @@ enable or disable a debug mode where tabs are drawn as zero-sized
     attr1=\value{autotabbing@current}
   \bgroup
     % syntax
-    \let\\=\autotabbing@row@next
-    \let&=\autotabbing@cell@next
+    \DeclareDocumentCommand & { O{0} } {
+      \@@_next_cell:n {##1}
+    }
     \catcode`\&=\active
-    \let\intertext=\autotabbing@intertext
+
+    \DeclareDocumentCommand \\ { O{0pt} } {
+      \autotabbing@row@next[##1]
+    }
+    \DeclareDocumentCommand \intertext { +m } {
+      \autotabbing@intertext {##1}
+    }
+
     \@@_draw_tab:
     \ignorespaces
 }
@@ -430,23 +438,26 @@ enable or disable a debug mode where tabs are drawn as zero-sized
 %    \end{macrocode}
 % \end{function}
 %
-% \begin{macro}{\autotabbing@cell@next}
+% \begin{function}{\@@_next_cell:n}
+% \begin{arguments}
+%   \item name of this tabstop
+% \end{arguments}
 % Available as |&| in the environment.
 % To ensure increasing tabs, without or with an invalid argument
 % just advance the counter.
 %    \begin{macrocode}
-\newcommand*{\autotabbing@cell@next}[1][0]{%
+\cs_new:Nn \@@_next_cell:n {
   \@@_end_cell:
-  \ifnum #1 > \value{autotabbing@current}%
-    \setcounter{autotabbing@current}{#1}%
-  \else%
-    \stepcounter{autotabbing@current}%
-  \fi%
-  \hspace{\l@@_col_sep}%
+  \ifnum #1 > \value{autotabbing@current}
+    \setcounter{autotabbing@current}{#1}
+  \else
+    \stepcounter{autotabbing@current}
+  \fi
+  \hspace{\l@@_col_sep}
   \@@_begin_cell:
 }
 %    \end{macrocode}
-% \end{macro}
+% \end{function}
 %
 % \begin{environment}{\autotabbing@row}
 % A row starts at tab 0. Mark the row box using attribute.
