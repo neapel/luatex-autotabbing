@@ -1,7 +1,6 @@
 NAME = autotabbing
 FORMAT = lualatex
 
-INS = $(NAME).ins
 DTX = $(NAME).dtx
 DOC = $(NAME).pdf
 STY = $(NAME).sty
@@ -14,7 +13,7 @@ SRCDIR = $(TEXMFROOT)/source/$(FORMAT)/$(NAME)
 
 RUNFILES = $(STY) $(LUA)
 DOCFILES = $(DOC) README
-SRCFILES = $(DTX) $(INS) Makefile
+SRCFILES = $(DTX) Makefile
 
 ALLFILES = $(RUNFILES) $(DOCFILES) $(SRCFILES)
 
@@ -24,7 +23,7 @@ ZIP = $(NAME).zip
 $(DOC) : $(DTX) $(STY) $(LUA)
 	lualatex -synctex=1 $<
 
-$(STY) $(LUA) : $(INS) $(DTX)
+$(STY) $(LUA) : $(DTX)
 	tex $<
 
 .PHONY : install
