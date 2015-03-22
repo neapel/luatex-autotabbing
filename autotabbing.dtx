@@ -366,29 +366,31 @@ enable or disable a debug mode where tabs are drawn as zero-sized
 %    \end{macrocode}
 % \end{macro}
 %
-% We use a counter to keep track of the current tabstop.
+% \begin{variable}{\g@@_current}
+% Keep track of the current tabstop.
 %    \begin{macrocode}
-\newcounter{autotabbing@current}
+\int_new:N \g@@_current
 %    \end{macrocode}
+% \end{variable}
 %
 % \begin{function}{\@@_draw_tab:}
 % Draft visualisation: show the tabstops and numbers.
 %    \begin{macrocode}
 \cs_new:Nn \@@_draw_tab: {
-  \bool_if:NT \l@@_draft_bool {
-    \ifnum\value{autotabbing@current} > 0%
-      \raisebox{0pt}[0pt][0pt]{% zero height box
-        \ifdefined\color\color{red}\fi%
-        \makebox[0pt][c]{% zero width rule
-          \rule[-.1\baselineskip]{.5pt}{.5\baselineskip}}%
-        \makebox[0pt][c]{% zero width label
-          \raisebox{0.5\baselineskip}{%
-            \fontsize{6pt}{6pt}\sffamily%
-            \theautotabbing@current%
-          }%
-        }%
-      }%
-    \fi%
+  \bool_if:nT {
+    \l@@_draft_bool && \int_compare_p:n { \g@@_current > 0 }
+  } {
+    \raisebox{0pt}[0pt][0pt]{% zero height box
+      \ifdefined\color\color{red}\fi
+      \makebox[0pt][c]{% zero width rule
+        \rule[-.1\baselineskip]{.5pt}{.5\baselineskip}}
+      \makebox[0pt][c]{% zero width label
+        \raisebox{0.5\baselineskip}{
+          \fontsize{6pt}{6pt}\sffamily
+          \int_to_arabic:n \g@@_current
+        }
+      }
+    }
   }
 }
 %    \end{macrocode}
@@ -410,8 +412,8 @@ enable or disable a debug mode where tabs are drawn as zero-sized
 \catcode`&=\active
 \cs_new:Nn \@@_begin_cell: {
   \hbox
-    attr0=2% mark as cell
-    attr1=\value{autotabbing@current}
+    attr0 = 2% mark as cell
+    attr1 = \int_use:N \g@@_current
   \bgroup
     % syntax
     \DeclareDocumentCommand & { O{0} } {
@@ -448,11 +450,9 @@ enable or disable a debug mode where tabs are drawn as zero-sized
 %    \begin{macrocode}
 \cs_new:Nn \@@_next_cell:n {
   \@@_end_cell:
-  \ifnum #1 > \value{autotabbing@current}
-    \setcounter{autotabbing@current}{#1}
-  \else
-    \stepcounter{autotabbing@current}
-  \fi
+  \int_compare:nTF { #1 > \g@@_current }
+    { \int_gset:Nn \g@@_current {#1}  }
+    { \int_gincr:N \g@@_current }
   \hspace{\l@@_col_sep}
   \@@_begin_cell:
 }
@@ -464,7 +464,7 @@ enable or disable a debug mode where tabs are drawn as zero-sized
 % (Should be fine to use |attr0| here as well, the box will be recreated)
 %    \begin{macrocode}
 \newenvironment*{autotabbing@row}{%
-  \setcounter{autotabbing@current}{0}%
+  \int_gset:Nn \g@@_current 0
   \hbox attr0=1 % mark as row
   \bgroup%
     \@@_begin_cell:
