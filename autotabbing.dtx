@@ -19,7 +19,7 @@
 \def\nameofplainTeX{plain}
 \ifx\fmtname\nameofplainTeX
 
-\input docstrip.tex
+\input l3docstrip.tex
 \keepsilent
 \askforoverwritefalse
 
@@ -60,17 +60,16 @@ and version 1.2 or later is part of all distributions of LaTeX version
 %</driver>
 %
 % \iffalse
-%<*driver>
-\ProvidesFile{autotabbing.dtx}
-%</driver>
-%<package>\NeedsTeXFormat{LaTeX2e}[1999/12/01]
-%<package>\ProvidesPackage{autotabbing}
-%<*package>
-    [2015/03/16 v1.0 automatic tabbing-like environment]
-%</package>
+%<*driver|package>
+\RequirePackage{expl3}
+
+\GetIdInfo$Id: min.dtx 1 2015-03-06 $
+  {automatic tabbing-like environment}
+%</driver|package>
 %
 %<*driver>
-\documentclass{ltxdoc}
+\ProvidesFile{autotabbing.dtx}
+\documentclass{l3doc}
 \usepackage{autotabbing}
 \usepackage{xcolor}
 \usepackage{showexpl}
@@ -90,15 +89,19 @@ and version 1.2 or later is part of all distributions of LaTeX version
 \parindent=0pt
 
 \begin{document}
-\changes{v1.0}{2015/03/16}{Initial version}
 
-\GetFileInfo{autotabbing.dtx}
+\begin{documentation}
 
-\DoNotIndex{\newcommand,\newenvironment}
+\changes{v1}{2015/03/16}{Initial version}
+\changes{v2}{2015/03/22}{\LaTeX3 port}
 
-\title{The \textsf{autotabbing} package\thanks{This document
-  corresponds to \textsf{autotabbing}~\fileversion, dated \filedate.}}
+%\GetFileInfo{autotabbing.dtx}
+
+%\DoNotIndex{\newcommand,\newenvironment}
+
+\title{The \pkg{autotabbing} package}
 \author{Pascal Germroth \\ \texttt{pascal@germroth.name}}
+\date{Version \ExplFileVersion, dated \ExplFileDate}
 
 \maketitle
 
@@ -110,7 +113,7 @@ You don't define columns beforehand but simply insert named tabstops which will
 be aligned with each other, as determined by the content.
 
 Originally written to pretty print aligned Haskell code in a proportional font,
-see the \textsf{autoverbalign} package for an attempt to guess these tabstops from
+see the \pkg{autoverbalign} package for an attempt to guess these tabstops from
 monospace-aligned text.
 Declaring a complex alignment like this is easier
 than using a |tabbing| environment or a |tabular|.
@@ -144,7 +147,7 @@ There is also no support for cells spanning multiple rows.
   The & environment supports & breaking across & pages \\
   while & content & says & aligned
 \end{autotabbing}
-Of course for simple layouts \textsf{longtable} would be more flexible here,
+Of course for simple layouts \pkg{longtable} would be more flexible here,
 but this package doesn't try to provide full-featured tables but instead a
 very simple automatic alignment function.
 
@@ -153,12 +156,15 @@ very simple automatic alignment function.
 Load the package using
 |\usepackage|\oarg{kvargs}|{autotabbing}|.
 
-Use the environment:
+Use the environment: \env{autotabbing},
 |\begin{autotabbing}|\oarg{kvargs} ... |\end{autotabbing}|.
 
 Use the optional arguments or |\autotabbingsetup|\marg{kvargs} to set options.
 
-\DescribeMacro{&}
+\begin{function}{&}
+  \begin{syntax}
+    |&|\oarg{id}
+  \end{syntax}
 Set a tabstop using |&|\oarg{id}. This introduces a new cell.
 Stop numbers must be given in ascending order within each row, but arbitrary
 gaps are fine.
@@ -192,12 +198,15 @@ complex layouts.
 \end{autotabbing}
 \end{LTXexample}
 }
+\end{function}
 
-
-\DescribeMacro{\\}
-Start a new row using |\\|\oarg{length}.
+\begin{function}{\\}
+  \begin{syntax}
+    |\\|\oarg{skip}
+  \end{syntax}
+Start a new row using |\\|\oarg{skip}.
 Don't end the last one with |\\|, it will cause an empty row.
-The optional argument may contain a length passed to |\vspace|.
+The optional argument may contain a skip passed to \cmd\vspace.
 
 \begin{LTXexample}
 \begin{autotabbing}
@@ -206,9 +215,13 @@ The optional argument may contain a length passed to |\vspace|.
   empty line after\\
 \end{autotabbing}
 \end{LTXexample}
+\end{function}
 
-\DescribeMacro{\intertext}
-Like in \textsf{amsmath}, |\intertext|\marg{content} allows interrupting
+\begin{function}{\intertext}
+  \begin{syntax}
+    |\intertext|\marg{content}
+  \end{syntax}
+Like in \pkg{amsmath}, \cmd\intertext\marg{content} allows interrupting
 an alignment, aligning across the break.
 Unlike in the math environments, there should \emph{not} be a |\\| before the
 |\intertext| as this will cause an empty line.
@@ -225,66 +238,51 @@ to the parent vlist.
   and & continuing & aligned
 \end{autotabbing}
 \end{LTXexample}
+\end{function}
 
 \subsection{Spacing}
-\DescribeKey{aboveskip}
-\DescribeKey{belowskip}
-\DescribeKey{aboveintertextskip}
-\DescribeKey{belowintertextskip}
-\DescribeKey{belowskip}
-\DescribeKey{colsep}
-Similar to \textsf{tabbing}, the row boxes are laid out like paragraph lines.
+\begin{variable}{
+  above-skip, below-skip,
+  above-intertext-skip, below-intertext-skip,
+  col-sep, row-sep
+}
+Similar to \pkg{tabbing}, the row boxes are laid out like paragraph lines.
 There are options provided for additional vertical spacing, defaulting to
 |.5\baselineskip|:
 For each new row |\\|\oarg{additional} extra space can be inserted.
-|aboveskip| and |belowskip| are inserted before and after
+|above-skip| and |below-skip| are inserted before and after
 the first and last row respectively.
-|aboveintertextskip| and |belowintertextskip| are inserted before and after
-an |\intertext|, adjust this instead of using |\\| here.
-To spread the layout there are |colsep| and |rowsep|, which default to zero.
+|above-intertext-skip| and |below-intertext-skip| are inserted before and after
+an \cmd\intertext, adjust this instead of using |\\| here.
+To spread the layout there are |col-sep| and |row-sep|, which default to zero.
 
-\begingroup
-  \renewcommand{\hspace}[1]{%
-    \hbox{$\xleftrightarrow{\text{\scriptsize\ttfamily #1}}$}}
-  \renewcommand{\vspace}[1]{%
-    \hbox{$\updownarrow$\scriptsize\ttfamily #1}}
-  \begin{autotabbing}[final,
-    aboveskip=aboveskip,
-    belowskip=belowskip,
-    aboveintertextskip=aboveintertextskip,
-    belowintertextskip=belowintertextskip,
-    rowsep=rowsep,
-    colsep=colsep
-  ]
-    cell & cell \\[additional]
-    cell & cell
-    \intertext{intertext}
-    cell & cell
-  \end{autotabbing}
-\endgroup
-
-Alignment takes |colsep| into account even when spanning multiple columns:
+Alignment takes |col-sep| into account even when spanning multiple columns:
 \begin{LTXexample}
-\begin{autotabbing}[colsep=5mm]
+\begin{autotabbing}[col-sep=5mm]
   xxxxxxxx& xxxxxxxx& xxxxxxxx\\
   (\dotfill)& (\dotfill)
 \end{autotabbing}
 \end{LTXexample}
+\end{variable}
 
 \subsection{Debugging}
-\DescribeKey{draft}
-\DescribeKey{final}
+\begin{variable}{draft}
+\begin{syntax}
+  |draft| = \meta{bool}
+\end{syntax}
 The |draft| option, and its opposite |final| can be used to respectively
 enable or disable a debug mode where tabs are drawn as zero-sized
 (i.e. with no impact on the layout) markers showing the tab's ID.
 
 \begin{LTXexample}
-\begin{autotabbing}[draft]
+\begin{autotabbing}[draft=true]
   x & x &[3] x & x \\
   x & x &[4] x & x
 \end{autotabbing}
 \end{LTXexample}
+\end{variable}
 
+\end{documentation}
 
 \DocInput{autotabbing.dtx}
 \PrintChanges
@@ -312,39 +310,59 @@ enable or disable a debug mode where tabs are drawn as zero-sized
 %   Right brace   \}     Tilde         \~}
 %
 %
-% \StopEventually{}
+% \begin{implementation}
 % \section{Implementation}
+%
+% \subsection{\LaTeX-part}
+%    \begin{macrocode}
+%<*package>
+%<@@=autotabbing>
+\ProvidesExplPackage{\ExplFileName}{\ExplFileDate}{\ExplFileVersion}
+  {\ExplFileDescription}
+%    \end{macrocode}
 %
 % Load the Lua portion of the package
 %    \begin{macrocode}
-%<*package>
 \RequirePackage{luatexbase}
 \RequireLuaModule{autotabbing}
 %    \end{macrocode}
 % Define the options
 %    \begin{macrocode}
-\RequirePackage{kvoptions}
-\SetupKeyvalOptions{family=autotabbing, prefix=autotabbing@}
+\RequirePackage{l3keys2e}
 
-\DeclareBoolOption{draft}
-\DeclareComplementaryOption{final}{draft}
 
-\DeclareStringOption[.5\baselineskip]{aboveskip}
-\DeclareStringOption[.5\baselineskip]{belowskip}
+\keys_define:nn { autotabbing } {
+  draft .bool_set:N = \l@@_draft_bool ,
+  above-skip .skip_set:N = \l@@_above_skip ,
+  below-skip .skip_set:N = \l@@_below_skip ,
+  above-intertext-skip .skip_set:N = \l@@_above_intertext_skip ,
+  below-intertext-skip .skip_set:N = \l@@_below_intertext_skip ,
+  col-sep .skip_set:N = \l@@_col_sep ,
+  row-sep .skip_set:N = \l@@_row_sep ,
+}
 
-\DeclareStringOption[.5\baselineskip]{aboveintertextskip}
-\DeclareStringOption[.5\baselineskip]{belowintertextskip}
+\keys_set:nn { autotabbing } {
+  draft = false ,
+  above-skip = .5\baselineskip ,
+  below-skip = .5\baselineskip ,
+  above-intertext-skip = .5\baselineskip ,
+  below-intertext-skip = .5\baselineskip ,
+  col-sep = 0pt ,
+  row-sep = 0pt
+}
 
-\DeclareStringOption[0pt]{colsep}
-\DeclareStringOption[0pt]{rowsep}
-
-\ProcessKeyvalOptions{autotabbing}
+\ProcessKeysOptions { autotabbing }
 %    \end{macrocode}
 %
 % \begin{macro}{\autotabbingsetup}
-% Macro to set the options
+% \begin{arguments}
+%   \item key-value list of options
+% \end{arguments}
+% Set the options for the remainder of the context.
 %    \begin{macrocode}
-\newcommand*{\autotabbingsetup}{\setkeys{autotabbing}}
+\NewDocumentCommand \autotabbingsetup { +m } {
+  \keys_set:nn { autotabbing } {#1}
+}
 %    \end{macrocode}
 % \end{macro}
 %
@@ -353,11 +371,11 @@ enable or disable a debug mode where tabs are drawn as zero-sized
 \newcounter{autotabbing@current}
 %    \end{macrocode}
 %
-% \begin{macro}{\autotabbing@cell@start}
+% \begin{function}{\@@_draw_tab:}
 % Draft visualisation: show the tabstops and numbers.
 %    \begin{macrocode}
-\newcommand{\autotabbing@cell@start}{%
-  \ifautotabbing@draft%
+\cs_new:Nn \@@_draw_tab: {
+  \bool_if:NT \l@@_draft_bool {
     \ifnum\value{autotabbing@current} > 0%
       \raisebox{0pt}[0pt][0pt]{% zero height box
         \ifdefined\color\color{red}\fi%
@@ -371,12 +389,12 @@ enable or disable a debug mode where tabs are drawn as zero-sized
         }%
       }%
     \fi%
-  \fi%
+  }
 }
 %    \end{macrocode}
-% \end{macro}
+% \end{function}
 %
-% \begin{environment}{autotabbing@cell}
+% \begin{function}{\@@_begin_cell:, \@@_end_cell:}
 % We put the cell's contents into a box,
 % giving it a tag and the ID of the starting tab via attributes.
 % (Just using 0 and 1 should be fine here since the box will be recreated
@@ -390,27 +408,27 @@ enable or disable a debug mode where tabs are drawn as zero-sized
 % manual alignment using |\hfill| still works.
 %    \begin{macrocode}
 \catcode`&=\active
-\newenvironment*{autotabbing@cell}{%
+\cs_new:Nn \@@_begin_cell: {
   \hbox
     attr0=2% mark as cell
     attr1=\value{autotabbing@current}
-  \bgroup%
+  \bgroup
     % syntax
-    \let\\=\autotabbing@row@next%
-    \let&=\autotabbing@cell@next%
-    \catcode`\&=\active%
-    \let\intertext=\autotabbing@intertext%
-    % start hook
-    \autotabbing@cell@start%
-    \ignorespaces%
-}{%
-    \hss%
-  \egroup%
+    \let\\=\autotabbing@row@next
+    \let&=\autotabbing@cell@next
+    \catcode`\&=\active
+    \let\intertext=\autotabbing@intertext
+    \@@_draw_tab:
+    \ignorespaces
 }
 \catcode`&=4
 
+\cs_new:Nn \@@_end_cell: {%
+    \hss
+  \egroup
+}
 %    \end{macrocode}
-% \end{environment}
+% \end{function}
 %
 % \begin{macro}{\autotabbing@cell@next}
 % Available as |&| in the environment.
@@ -418,14 +436,14 @@ enable or disable a debug mode where tabs are drawn as zero-sized
 % just advance the counter.
 %    \begin{macrocode}
 \newcommand*{\autotabbing@cell@next}[1][0]{%
-  \end{autotabbing@cell}%
+  \@@_end_cell:
   \ifnum #1 > \value{autotabbing@current}%
     \setcounter{autotabbing@current}{#1}%
   \else%
     \stepcounter{autotabbing@current}%
   \fi%
-  \hspace{\autotabbing@colsep}%
-  \begin{autotabbing@cell}%
+  \hspace{\l@@_col_sep}%
+  \@@_begin_cell:
 }
 %    \end{macrocode}
 % \end{macro}
@@ -438,9 +456,9 @@ enable or disable a debug mode where tabs are drawn as zero-sized
   \setcounter{autotabbing@current}{0}%
   \hbox attr0=1 % mark as row
   \bgroup%
-    \begin{autotabbing@cell}%
+    \@@_begin_cell:
 }{%
-    \end{autotabbing@cell}%
+    \@@_end_cell:
   \egroup%
 }
 %    \end{macrocode}
@@ -453,7 +471,7 @@ enable or disable a debug mode where tabs are drawn as zero-sized
 %    \begin{macrocode}
 \newcommand{\autotabbing@row@next}[1][0pt]{%
   \end{autotabbing@row}%
-  \vspace{\autotabbing@rowsep}%
+  \vspace{\l@@_row_sep}%
   \vspace{#1}%
   \begin{autotabbing@row}%
 }%
@@ -465,10 +483,10 @@ enable or disable a debug mode where tabs are drawn as zero-sized
 %    \begin{macrocode}
 \newcommand{\autotabbing@intertext}[1]{%
   \end{autotabbing@row}%
-  \vspace{\autotabbing@aboveintertextskip}%
+  \vspace{\l@@_above_intertext_skip}%
   #1%
   \par%
-  \vspace{\autotabbing@belowintertextskip}%
+  \vspace{\l@@_below_intertext_skip}%
   \begin{autotabbing@row}%
 }
 %    \end{macrocode}
@@ -496,9 +514,9 @@ enable or disable a debug mode where tabs are drawn as zero-sized
   % align the cells
   \directlua{autotabbing.adjust()}%
   % output them into the parent vlist
-  \vspace{\autotabbing@aboveskip}%
+  \vspace{\l@@_above_skip}%
   \unvbox0%
-  \vspace{\autotabbing@belowskip}%
+  \vspace{\l@@_below_skip}%
   % no indent if not followed by a newline
   \noindent%
   \ignorespacesafterend%
@@ -652,5 +670,5 @@ end
 % \end{luafun}
 %
 %
-% \Finale
+% \end{implementation}
 \endinput
