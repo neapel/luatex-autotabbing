@@ -206,7 +206,8 @@ complex layouts.
   \end{syntax}
 Start a new row using |\\|\oarg{skip}.
 Don't end the last one with |\\|, it will cause an empty row.
-The optional argument may contain a skip passed to \cmd\vspace.
+The optional argument may contain a vertical skip inserted in addition to
+|row-sep|.
 
 \begin{LTXexample}
 \begin{autotabbing}
@@ -325,12 +326,21 @@ enable or disable a debug mode where tabs are drawn as zero-sized
 %    \begin{macrocode}
 \RequirePackage{luatexbase}
 \RequireLuaModule{autotabbing}
+
+\RequirePackage{l3keys2e}
 %    \end{macrocode}
+%
+% \begin{variable}{
+%   \l@@_draft_bool,
+%   \l@@_above_skip,
+%   \l@@_below_skip,
+%   \l@@_above_intertext_skip,
+%   \l@@_below_intertext_skip,
+%   \l@@_col_sep,
+%   \l@@_row_sep
+% }
 % Define the options
 %    \begin{macrocode}
-\RequirePackage{l3keys2e}
-
-
 \keys_define:nn { autotabbing } {
   draft .bool_set:N = \l@@_draft_bool ,
   above-skip .skip_set:N = \l@@_above_skip ,
@@ -340,7 +350,11 @@ enable or disable a debug mode where tabs are drawn as zero-sized
   col-sep .skip_set:N = \l@@_col_sep ,
   row-sep .skip_set:N = \l@@_row_sep ,
 }
-
+%    \end{macrocode}
+% \end{variable}
+%
+% Set default values.
+%    \begin{macrocode}
 \keys_set:nn { autotabbing } {
   draft = false ,
   above-skip = .5\baselineskip ,
@@ -350,11 +364,14 @@ enable or disable a debug mode where tabs are drawn as zero-sized
   col-sep = 0pt ,
   row-sep = 0pt
 }
-
+%    \end{macrocode}
+%
+% Set from package options.
+%    \begin{macrocode}
 \ProcessKeysOptions { autotabbing }
 %    \end{macrocode}
 %
-% \begin{macro}{\autotabbingsetup}
+% \begin{function}{\autotabbingsetup}
 % \begin{arguments}
 %   \item key-value list of options
 % \end{arguments}
@@ -364,7 +381,7 @@ enable or disable a debug mode where tabs are drawn as zero-sized
   \keys_set:nn { autotabbing } {#1}
 }
 %    \end{macrocode}
-% \end{macro}
+% \end{function}
 %
 % \begin{variable}{\g@@_current}
 % Keep track of the current tabstop.
@@ -374,11 +391,12 @@ enable or disable a debug mode where tabs are drawn as zero-sized
 % \end{variable}
 %
 % \begin{function}{\@@_draw_tab:}
-% Draft visualisation: show the tabstops and numbers.
+% Draft visualisation: show the tabstops and their IDs.
 %    \begin{macrocode}
 \cs_new:Nn \@@_draw_tab: {
   \bool_if:nT {
-    \l@@_draft_bool && \int_compare_p:n { \g@@_current > 0 }
+    \l@@_draft_bool
+    && \int_compare_p:n { \g@@_current > 0 }
   } {
     \raisebox{0pt}[0pt][0pt]{% zero height box
       \ifdefined\color\color{red}\fi
@@ -396,7 +414,7 @@ enable or disable a debug mode where tabs are drawn as zero-sized
 %    \end{macrocode}
 % \end{function}
 %
-% \begin{function}{\@@_begin_cell:, \@@_end_cell:}
+% \begin{function}{\@@_cell:, \@@_cell_end:}
 % We put the cell's contents into a box,
 % giving it a tag and the ID of the starting tab via attributes.
 % (Just using 0 and 1 should be fine here since the box will be recreated
@@ -410,7 +428,7 @@ enable or disable a debug mode where tabs are drawn as zero-sized
 % manual alignment using |\hfill| still works.
 %    \begin{macrocode}
 \catcode`&=\active
-\cs_new:Nn \@@_begin_cell: {
+\cs_new:Nn \@@_cell: {
   \hbox
     attr0 = 2% mark as cell
     attr1 = \int_use:N \g@@_current
@@ -422,10 +440,10 @@ enable or disable a debug mode where tabs are drawn as zero-sized
     \catcode`\&=\active
 
     \DeclareDocumentCommand \\ { O{0pt} } {
-      \autotabbing@row@next[##1]
+      \@@_next_row:n {##1}
     }
     \DeclareDocumentCommand \intertext { +m } {
-      \autotabbing@intertext {##1}
+      \@@_intertext:n {##1}
     }
 
     \@@_draw_tab:
@@ -433,7 +451,7 @@ enable or disable a debug mode where tabs are drawn as zero-sized
 }
 \catcode`&=4
 
-\cs_new:Nn \@@_end_cell: {%
+\cs_new:Nn \@@_cell_end: {
     \hss
   \egroup
 }
@@ -449,93 +467,119 @@ enable or disable a debug mode where tabs are drawn as zero-sized
 % just advance the counter.
 %    \begin{macrocode}
 \cs_new:Nn \@@_next_cell:n {
-  \@@_end_cell:
+  \@@_cell_end:
   \int_compare:nTF { #1 > \g@@_current }
     { \int_gset:Nn \g@@_current {#1}  }
     { \int_gincr:N \g@@_current }
-  \hspace{\l@@_col_sep}
-  \@@_begin_cell:
+  \skip_horizontal:N \l@@_col_sep
+  \@@_cell:
 }
 %    \end{macrocode}
 % \end{function}
 %
-% \begin{environment}{\autotabbing@row}
+% \begin{function}{\@@_row:, \@@_row_end:}
 % A row starts at tab 0. Mark the row box using attribute.
 % (Should be fine to use |attr0| here as well, the box will be recreated)
 %    \begin{macrocode}
-\newenvironment*{autotabbing@row}{%
+\cs_new:Nn \@@_row: {
   \int_gset:Nn \g@@_current 0
-  \hbox attr0=1 % mark as row
-  \bgroup%
-    \@@_begin_cell:
-}{%
-    \@@_end_cell:
-  \egroup%
+  \hbox attr0 = 1 % mark as row
+  \bgroup
+    \@@_cell:
+}
+\cs_new:Nn \@@_row_end: {
+    \@@_cell_end:
+  \egroup
 }
 %    \end{macrocode}
-% \end{environment}
+% \end{function}
 %
-% \begin{macro}{\autotabbing@row@next}
+% \begin{function}{\@@_next_row:n}
+% \begin{arguments}
+%   \item additional skip to insert between rows
+% \end{arguments}
 % Available as |\\| in the environment.
 % Closes the current row and immediately opens a new one.
-% Insert additional space between the two row boxes.
 %    \begin{macrocode}
-\newcommand{\autotabbing@row@next}[1][0pt]{%
-  \end{autotabbing@row}%
-  \vspace{\l@@_row_sep}%
-  \vspace{#1}%
-  \begin{autotabbing@row}%
-}%
-%    \end{macrocode}
-% \end{macro}
-%
-% \begin{macro}{\autotabbing@intertext}
-% Interrupt the display. Doesn't check if the last row may have been empty.
-%    \begin{macrocode}
-\newcommand{\autotabbing@intertext}[1]{%
-  \end{autotabbing@row}%
-  \vspace{\l@@_above_intertext_skip}%
-  #1%
-  \par%
-  \vspace{\l@@_below_intertext_skip}%
-  \begin{autotabbing@row}%
+\cs_new:Nn \@@_next_row:n {
+  \@@_row_end:
+  \skip_vertical:N \l@@_row_sep
+  \skip_vertical:n {#1}
+  \@@_row:
 }
 %    \end{macrocode}
-% \end{macro}
+% \end{function}
 %
-% \begin{environment}{autotabbing}
-% Collect the rows into a temporary vbox, use Lua to adjust the cells
+% \begin{function}{\@@_intertext:n}
+% \begin{arguments}
+%   \item the content that should be placed between rows
+% \end{arguments}
+% Interrupt the display. Doesn't check if the last row may have been empty.
+%    \begin{macrocode}
+\cs_new:Nn \@@_intertext:n {
+  \@@_row_end:
+  \skip_vertical:N \l@@_above_intertext_skip
+  #1
+  \par
+  \skip_vertical:N \l@@_below_intertext_skip
+  \@@_row:
+}
+%    \end{macrocode}
+% \end{function}
+%
+% \begin{function}{\@@_tabbing:}
+% Collect the rows into a temporary vbox.
+%    \begin{macrocode}
+\cs_new:Nn \@@_tabbing: {
+  \par\dimen0=\prevdepth
+  \setbox0=\vbox\bgroup
+    \prevdepth=\dimen0% correct baselineskip glue
+    \@@_row:
+      % now inside first cell
+}
+%    \end{macrocode}
+% \end{function}
+% \begin{function}{\@@_tabbing_end:}
+% Use Lua to adjust the cells
 % and insert the vbox's contents into the parent vbox.
 % We unskip the final space here to allow a linebreak before the |\end|
 % without having to use |%| in the line before.
 %    \begin{macrocode}
-\newenvironment*{autotabbing}[1][]{%
-  \autotabbingsetup{#1}%
-  % put the rows into a temporary vbox
-  \par\dimen0=\prevdepth%
-  \setbox0=\vbox\bgroup%
-    \prevdepth=\dimen0% correct baselineskip glue
-    \begin{autotabbing@row}%
-      % now inside first cell
-}{%
-      % allow for line break before \end
-      \unskip%
-    \end{autotabbing@row}%
-  \egroup%
-  % align the cells
-  \directlua{autotabbing.adjust()}%
-  % output them into the parent vlist
-  \vspace{\l@@_above_skip}%
-  \unvbox0%
-  \vspace{\l@@_below_skip}%
-  % no indent if not followed by a newline
-  \noindent%
-  \ignorespacesafterend%
+\cs_new:Nn \@@_tabbing_end: {
+      \unskip
+    \@@_row_end:
+  \egroup
+  \directlua{autotabbing.adjust()}
+  \skip_vertical:N \l@@_above_skip
+  \unvbox0
+  \skip_vertical:N \l@@_below_skip
 }
+%    \end{macrocode}
+% \end{function}
+%
+% \begin{function}{autotabbing}
+% \begin{arguments}
+%   \item key-value options
+% \end{arguments}
+%    \begin{macrocode}
+\NewDocumentEnvironment {autotabbing} {o}
+  {
+    \IfValueT {#1} { \autotabbingsetup {#1} }
+    \@@_tabbing:
+  }
+  {
+    \@@_tabbing_end:
+    \noindent
+    \ignorespacesafterend
+  }
+%    \end{macrocode}
+% \end{function}
+%
+%    \begin{macrocode}
 %</package>
 %    \end{macrocode}
-% \end{environment}
 %
+% \subsection{Lua-portion}
 %
 %    \begin{macrocode}
 %<*lua>
