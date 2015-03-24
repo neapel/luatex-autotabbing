@@ -15,6 +15,7 @@
 %
 % \fi
 %
+% \iffalse
 %<*driver>
 \def\nameofplainTeX{plain}
 \ifx\fmtname\nameofplainTeX
@@ -58,6 +59,7 @@ and version 1.2 or later is part of all distributions of LaTeX version
 \expandafter\endbatchfile
 \fi
 %</driver>
+% \fi
 %
 % \iffalse
 %<*driver|package>
@@ -327,6 +329,7 @@ enable or disable a debug mode where tabs are drawn as zero-sized
 \RequirePackage{luatexbase}
 \RequireLuaModule{autotabbing}
 
+\RequirePackage{xparse}
 \RequirePackage{l3keys2e}
 %    \end{macrocode}
 %
@@ -414,6 +417,28 @@ enable or disable a debug mode where tabs are drawn as zero-sized
 %    \end{macrocode}
 % \end{function}
 %
+% \begin{function}{\@@_enable_syntax:}
+% Enable the user syntax inside the current group.
+%    \begin{macrocode}
+\group_begin:
+\char_set_catcode_active:N &
+\cs_new:Nn \@@_enable_syntax: {
+  \DeclareDocumentCommand & { O{0} } {
+    \@@_next_cell:n {##1}
+  }
+  \char_set_catcode_active:N \&
+
+  \DeclareDocumentCommand \\ { O{0pt} } {
+    \@@_next_row:n {##1}
+  }
+  \DeclareDocumentCommand \intertext { +m } {
+    \@@_intertext:n {##1}
+  }
+}
+\group_end:
+%    \end{macrocode}
+% \end{function}
+%
 % \begin{function}{\@@_cell:, \@@_cell_end:}
 % We put the cell's contents into a box,
 % giving it a tag and the ID of the starting tab via attributes.
@@ -427,30 +452,15 @@ enable or disable a debug mode where tabs are drawn as zero-sized
 % The box ends with a glue so the content won't stretch when the width is ajusted,
 % manual alignment using |\hfill| still works.
 %    \begin{macrocode}
-\catcode`&=\active
 \cs_new:Nn \@@_cell: {
   \hbox
     attr0 = 2% mark as cell
     attr1 = \int_use:N \g@@_current
   \bgroup
-    % syntax
-    \DeclareDocumentCommand & { O{0} } {
-      \@@_next_cell:n {##1}
-    }
-    \catcode`\&=\active
-
-    \DeclareDocumentCommand \\ { O{0pt} } {
-      \@@_next_row:n {##1}
-    }
-    \DeclareDocumentCommand \intertext { +m } {
-      \@@_intertext:n {##1}
-    }
-
     \@@_draw_tab:
+    \@@_enable_syntax:
     \ignorespaces
 }
-\catcode`&=4
-
 \cs_new:Nn \@@_cell_end: {
     \hss
   \egroup
@@ -528,17 +538,17 @@ enable or disable a debug mode where tabs are drawn as zero-sized
 % \end{function}
 %
 % \begin{function}{\@@_tabbing:}
-% Collect the rows into a temporary vbox.
+% Collect the rows into a temporary vbox, correcting the |baselineskip| glue.
 %    \begin{macrocode}
 \cs_new:Nn \@@_tabbing: {
-  \par\dimen0=\prevdepth
-  \setbox0=\vbox\bgroup
-    \prevdepth=\dimen0% correct baselineskip glue
+  \par\dimen0 = \prevdepth
+  \setbox0 = \vbox\bgroup
+    \prevdepth = \dimen0
     \@@_row:
-      % now inside first cell
 }
 %    \end{macrocode}
 % \end{function}
+%
 % \begin{function}{\@@_tabbing_end:}
 % Use Lua to adjust the cells
 % and insert the vbox's contents into the parent vbox.
@@ -720,9 +730,12 @@ function autotabbing.adjust()
   local offsets = get_offsets(rows)
   vbox.head = adjust_widths(vbox.head, rows, offsets)
 end
-%</lua>
 %    \end{macrocode}
 % \end{luafun}
+%
+%    \begin{macrocode}
+%</lua>
+%    \end{macrocode}
 %
 %
 % \end{implementation}
