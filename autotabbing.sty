@@ -1,0 +1,176 @@
+%%
+%% This is file `autotabbing.sty',
+%% generated with the docstrip utility.
+%%
+%% The original source files were:
+%%
+%% autotabbing.dtx  (with options: `package')
+%% 
+%% This is a generated file.
+%% 
+%% Copyright (C) 2015 by Pascal Germroth <pascal@germroth.name>
+%% 
+%% This file may be distributed and/or modified under the conditions of
+%% the LaTeX Project Public License, either version 1.2 of this license
+%% or (at your option) any later version.  The latest version of this
+%% license is in:
+%% 
+%%    http://www.latex-project.org/lppl.txt
+%% 
+%% and version 1.2 or later is part of all distributions of LaTeX version
+%% 1999/12/01 or later.
+%% 
+\RequirePackage{expl3}
+\GetIdInfo$Id: autotabbing.dtx 1.0.0 2015-05-05 $
+  {automatic tabbing-like environment}
+\ProvidesExplPackage{\ExplFileName}{\ExplFileDate}{\ExplFileVersion}
+  {\ExplFileDescription}
+\RequirePackage{luatexbase}
+\RequireLuaModule{autotabbing}
+\RequirePackage{xparse}
+\keys_define:nn { autotabbing } {
+  draft .bool_set:N = \l__autotabbing_draft_bool ,
+  draft .initial:n = false ,
+  draft .default:n = true ,
+  final .bool_set_inverse:N = \l__autotabbing_draft_bool ,
+  final .default:n = true ,
+}
+\keys_define:nn { autotabbing } {
+  above-skip .skip_set:N = \l__autotabbing_above_skip ,
+  above-skip .initial:n = .5\baselineskip ,
+}
+\keys_define:nn { autotabbing } {
+  below-skip .skip_set:N = \l__autotabbing_below_skip ,
+  below-skip .initial:n = .5\baselineskip ,
+}
+\keys_define:nn { autotabbing } {
+  above-intertext-skip .skip_set:N = \l__autotabbing_above_intertext_skip ,
+  above-intertext-skip .initial:n = .5\baselineskip ,
+}
+\keys_define:nn { autotabbing } {
+  below-intertext-skip .skip_set:N = \l__autotabbing_below_intertext_skip ,
+  below-intertext-skip .initial:n = .5\baselineskip ,
+}
+\keys_define:nn { autotabbing } {
+  col-sep .skip_set:N = \l__autotabbing_col_sep ,
+  col-sep .initial:n = 0pt ,
+}
+\keys_define:nn { autotabbing } {
+  row-sep .skip_set:N = \l__autotabbing_row_sep ,
+  row-sep .initial:n = 0pt
+}
+\RequirePackage{l3keys2e}
+\ProcessKeysOptions { autotabbing }
+\NewDocumentCommand \autotabbingsetup { +m } {
+  \keys_set:nn { autotabbing } {#1}
+}
+\int_new:N \g__autotabbing_current
+\cs_new:Nn \__autotabbing_draw_tab: {
+  \bool_if:nT {
+    \l__autotabbing_draft_bool
+    && \int_compare_p:n { \g__autotabbing_current > 0 }
+  } {
+    \raisebox{0pt}[0pt][0pt]{% zero height box
+      \ifdefined\color\color{red}\fi
+      \makebox[0pt][c]{% zero width rule
+        \rule[-.1\baselineskip]{.5pt}{.5\baselineskip}}
+      \makebox[0pt][c]{% zero width label
+        \raisebox{0.5\baselineskip}{
+          \fontsize{6pt}{6pt}\sffamily
+          \int_to_arabic:n \g__autotabbing_current
+        }
+      }
+    }
+  }
+}
+\group_begin:
+\char_set_catcode_active:N &
+\cs_new:Nn \__autotabbing_enable_syntax: {
+  \DeclareDocumentCommand & { O{0} } {
+    \__autotabbing_next_cell:n {##1}
+  }
+  \char_set_catcode_active:N \&
+
+  \DeclareDocumentCommand \\ { O{0pt} } {
+    \__autotabbing_next_row:n {##1}
+  }
+  \DeclareDocumentCommand \intertext { +m } {
+    \__autotabbing_intertext:n {##1}
+  }
+}
+\group_end:
+\cs_new:Nn \__autotabbing_cell: {
+  \hbox
+    attr0 = 2% mark as cell
+    attr1 = \int_use:N \g__autotabbing_current
+  \bgroup
+    \__autotabbing_draw_tab:
+    \__autotabbing_enable_syntax:
+    \ignorespaces
+}
+\cs_new:Nn \__autotabbing_cell_end: {
+    \hss
+  \egroup
+}
+\cs_new:Nn \__autotabbing_next_cell:n {
+  \__autotabbing_cell_end:
+  \int_compare:nTF { #1 > \g__autotabbing_current }
+    { \int_gset:Nn \g__autotabbing_current {#1}  }
+    { \int_gincr:N \g__autotabbing_current }
+  \skip_horizontal:N \l__autotabbing_col_sep
+  \__autotabbing_cell:
+}
+\cs_new:Nn \__autotabbing_row: {
+  \int_gset:Nn \g__autotabbing_current 0
+  \hbox attr0 = 1 % mark as row
+  \bgroup
+    \__autotabbing_cell:
+}
+\cs_new:Nn \__autotabbing_row_end: {
+    \__autotabbing_cell_end:
+  \egroup
+}
+\cs_new:Nn \__autotabbing_next_row:n {
+  \__autotabbing_row_end:
+  \skip_vertical:N \l__autotabbing_row_sep
+  \skip_vertical:n {#1}
+  \__autotabbing_row:
+}
+\cs_new:Nn \__autotabbing_intertext:n {
+  \__autotabbing_row_end:
+  \skip_vertical:N \l__autotabbing_above_intertext_skip
+  #1
+  \par
+  \skip_vertical:N \l__autotabbing_below_intertext_skip
+  \__autotabbing_row:
+}
+\cs_new:Nn \__autotabbing_tabbing: {
+  \par\dimen0 = \prevdepth
+  \setbox0 = \vbox\bgroup
+    \prevdepth = \dimen0
+    \__autotabbing_row:
+}
+\cs_new:Nn \__autotabbing_tabbing_end: {
+      \unskip
+    \__autotabbing_row_end:
+  \egroup
+  \directlua{autotabbing.adjust()}
+  \skip_vertical:N \l__autotabbing_above_skip
+  \unvbox0
+  \skip_vertical:N \l__autotabbing_below_skip
+}
+\NewDocumentEnvironment {autotabbing} {o}
+  {
+    \group_begin:
+      \IfValueT {#1} { \autotabbingsetup {#1} }
+      \__autotabbing_tabbing:
+  }
+  {
+      \__autotabbing_tabbing_end:
+    \group_end:
+    \noindent
+    \ignorespacesafterend
+  }
+\endinput
+%%
+%% End of file `autotabbing.sty'.
