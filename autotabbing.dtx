@@ -62,13 +62,6 @@ and version 1.2 or later is part of all distributions of LaTeX version
 % \fi
 %
 % \iffalse
-%<*driver|package>
-\RequirePackage{expl3}
-
-\GetIdInfo$Id: min.dtx 1 2015-03-06 $
-  {automatic tabbing-like environment}
-%</driver|package>
-%
 %<*driver>
 \ProvidesFile{autotabbing.dtx}
 \documentclass{l3doc}
@@ -80,7 +73,15 @@ and version 1.2 or later is part of all distributions of LaTeX version
 \EnableCrossrefs
 \CodelineIndex
 \RecordChanges
-
+%</driver>
+%
+%<*driver|package>
+\RequirePackage{expl3}
+\GetIdInfo$Id: autotabbing.dtx 1.0.0 2015-05-05 $
+  {automatic tabbing-like environment}
+%</driver|package>
+%
+%<*driver>
 \newcommand{\DescribeKey}{\DescribeEnv}
 \newenvironment{luafun}[1]{%
   \begin{environment}{#1()}%
@@ -94,12 +95,8 @@ and version 1.2 or later is part of all distributions of LaTeX version
 
 \begin{documentation}
 
-\changes{v1}{2015/03/16}{Initial version}
-\changes{v2}{2015/03/22}{\LaTeX3 port}
-
-%\GetFileInfo{autotabbing.dtx}
-
-%\DoNotIndex{\newcommand,\newenvironment}
+\changes{v0.1.0}{2015/03/16}{Initial version}
+\changes{v0.2.0}{2015/03/22}{\LaTeX3 port}
 
 \title{The \pkg{autotabbing} package}
 \author{Pascal Germroth \\ \texttt{pascal@germroth.name}}
@@ -114,7 +111,7 @@ This package attempts to combine the way tabstops can be defined inline from
 You don't define columns beforehand but simply insert named tabstops which will
 be aligned with each other, as determined by the content.
 
-Originally written to pretty print aligned Haskell code in a proportional font,
+Originally written to pretty print aligned Haskell code in a proportional font:
 see the \pkg{autoverbalign} package for an attempt to guess these tabstops from
 monospace-aligned text.
 Declaring a complex alignment like this is easier
@@ -155,6 +152,7 @@ very simple automatic alignment function.
 
 \section{Usage}
 
+This package requires Lua\LaTeX{},
 Load the package using
 |\usepackage|\oarg{kvargs}|{autotabbing}|.
 
@@ -269,16 +267,17 @@ Alignment takes |col-sep| into account even when spanning multiple columns:
 \end{variable}
 
 \subsection{Debugging}
-\begin{variable}{draft}
+\begin{variable}{draft, final}
 \begin{syntax}
   |draft| = \meta{bool}
+  |final| = \meta{bool}
 \end{syntax}
 The |draft| option, and its opposite |final| can be used to respectively
 enable or disable a debug mode where tabs are drawn as zero-sized
 (i.e. with no impact on the layout) markers showing the tab's ID.
 
 \begin{LTXexample}
-\begin{autotabbing}[draft=true]
+\begin{autotabbing}[draft]
   x & x &[3] x & x \\
   x & x &[4] x & x
 \end{autotabbing}
@@ -328,49 +327,82 @@ enable or disable a debug mode where tabs are drawn as zero-sized
 %    \begin{macrocode}
 \RequirePackage{luatexbase}
 \RequireLuaModule{autotabbing}
-
 \RequirePackage{xparse}
-\RequirePackage{l3keys2e}
 %    \end{macrocode}
 %
-% \begin{variable}{
-%   \l@@_draft_bool,
-%   \l@@_above_skip,
-%   \l@@_below_skip,
-%   \l@@_above_intertext_skip,
-%   \l@@_below_intertext_skip,
-%   \l@@_col_sep,
-%   \l@@_row_sep
-% }
-% Define the options
+% \subsubsection{Options}
+% We use |l3keys| to define the options.
+% 
+% \begin{function}{\l@@_draft_bool}
+% Opposing |draft| and |final| switches.
 %    \begin{macrocode}
 \keys_define:nn { autotabbing } {
   draft .bool_set:N = \l@@_draft_bool ,
-  above-skip .skip_set:N = \l@@_above_skip ,
-  below-skip .skip_set:N = \l@@_below_skip ,
-  above-intertext-skip .skip_set:N = \l@@_above_intertext_skip ,
-  below-intertext-skip .skip_set:N = \l@@_below_intertext_skip ,
-  col-sep .skip_set:N = \l@@_col_sep ,
-  row-sep .skip_set:N = \l@@_row_sep ,
+  draft .initial:n = false ,
+  draft .default:n = true ,
+  final .bool_set_inverse:N = \l@@_draft_bool ,
+  final .default:n = true ,
 }
 %    \end{macrocode}
-% \end{variable}
-%
-% Set default values.
+% \end{function}
+% \begin{function}{\l@@_above_skip}
+% Space above block
 %    \begin{macrocode}
-\keys_set:nn { autotabbing } {
-  draft = false ,
-  above-skip = .5\baselineskip ,
-  below-skip = .5\baselineskip ,
-  above-intertext-skip = .5\baselineskip ,
-  below-intertext-skip = .5\baselineskip ,
-  col-sep = 0pt ,
-  row-sep = 0pt
+\keys_define:nn { autotabbing } {
+  above-skip .skip_set:N = \l@@_above_skip ,
+  above-skip .initial:n = .5\baselineskip ,
 }
 %    \end{macrocode}
+% \end{function}
+% \begin{function}{\l@@_below_skip}
+% Space below block
+%    \begin{macrocode}
+\keys_define:nn { autotabbing } {
+  below-skip .skip_set:N = \l@@_below_skip ,
+  below-skip .initial:n = .5\baselineskip ,
+}
+%    \end{macrocode}
+% \end{function}
+% \begin{function}{\l@@_above_intertext_skip}
+% Space above \cmd\intertext
+%    \begin{macrocode}
+\keys_define:nn { autotabbing } {
+  above-intertext-skip .skip_set:N = \l@@_above_intertext_skip ,
+  above-intertext-skip .initial:n = .5\baselineskip ,
+}
+%    \end{macrocode}
+% \end{function}
+% \begin{function}{\l@@_below_intertext_skip}
+% Space below \cmd\intertext
+%    \begin{macrocode}
+\keys_define:nn { autotabbing } {
+  below-intertext-skip .skip_set:N = \l@@_below_intertext_skip ,
+  below-intertext-skip .initial:n = .5\baselineskip ,
+}
+%    \end{macrocode}
+% \end{function}
+% \begin{function}{\l@@_col_sep}
+% Space between cells horizontally
+%    \begin{macrocode}
+\keys_define:nn { autotabbing } {
+  col-sep .skip_set:N = \l@@_col_sep ,
+  col-sep .initial:n = 0pt ,
+}
+%    \end{macrocode}
+% \end{function}
+% \begin{function}{\l@@_row_sep}
+% Space between rows vertically
+%    \begin{macrocode}
+\keys_define:nn { autotabbing } {
+  row-sep .skip_set:N = \l@@_row_sep ,
+  row-sep .initial:n = 0pt
+}
+%    \end{macrocode}
+% \end{function}
 %
 % Set from package options.
 %    \begin{macrocode}
+\RequirePackage{l3keys2e}
 \ProcessKeysOptions { autotabbing }
 %    \end{macrocode}
 %
@@ -386,12 +418,16 @@ enable or disable a debug mode where tabs are drawn as zero-sized
 %    \end{macrocode}
 % \end{function}
 %
-% \begin{variable}{\g@@_current}
+% \subsubsection{Creating attributed cells}
+% Cells and rows are boxes with special attributes marking their tabstops,
+% which are then re-packed at the correct size using Lua.
+%
+% \begin{function}{\g@@_current}
 % Keep track of the current tabstop.
 %    \begin{macrocode}
 \int_new:N \g@@_current
 %    \end{macrocode}
-% \end{variable}
+% \end{function}
 %
 % \begin{function}{\@@_draw_tab:}
 % Draft visualisation: show the tabstops and their IDs.
@@ -574,11 +610,13 @@ enable or disable a debug mode where tabs are drawn as zero-sized
 %    \begin{macrocode}
 \NewDocumentEnvironment {autotabbing} {o}
   {
-    \IfValueT {#1} { \autotabbingsetup {#1} }
-    \@@_tabbing:
+    \group_begin:
+      \IfValueT {#1} { \autotabbingsetup {#1} }
+      \@@_tabbing:
   }
   {
-    \@@_tabbing_end:
+      \@@_tabbing_end:
+    \group_end:
     \noindent
     \ignorespacesafterend
   }
